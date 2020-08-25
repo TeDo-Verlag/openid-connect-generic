@@ -72,6 +72,10 @@ class OpenID_Connect_Generic_Client_Wrapper {
 			add_action( 'wp_loaded', array($client_wrapper, 'ensure_tokens_still_fresh'));
 		}
 
+        if ( $settings->authenticate_filter ) {
+            add_filter('authenticate', array( $client_wrapper, 'authenticate_filter' ), 15, 3);
+        }
+
 		return $client_wrapper;
 	}
 
@@ -95,7 +99,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 
 	/**
 	 * Get the authentication url from the client
-	 * 
+	 *
 	 * @param array $atts The optional attributes array when called via a shortcode.
 	 *
 	 * @return string
@@ -108,7 +112,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 			$login_form = new OpenID_Connect_Generic_Login_Form( $this->settings, $this );
 			$login_form->handle_redirect_cookie();
 		}
-    
+
 		return $this->client->make_authentication_url( $atts );
 
 	}
@@ -811,4 +815,27 @@ class OpenID_Connect_Generic_Client_Wrapper {
 		// return our updated user
 		return get_user_by( 'id', $uid );
 	}
+
+    function authenticate_filter($user, $username, $password) {
+        if ( $user instanceof WP_User ) {
+            return $user;
+        }
+
+        if ( is_null($user) || is_wp_error($user) && $user->get_error_code() === 'invalid_username' ) {
+            if (! empty($username) && ! empty($password)) {
+                $token_result = $this->client->request_authentication_token_by_username_and_password($username, $password);
+
+                if ( is_wp_error( $token_result ) ) {
+                    return $token_result;
+                }
+
+                // get the decoded response from the authentication request result
+                $token_response = $this->client->get_token_response( $token_result );
+
+                $user = $this->validate($token_response);
+            }
+        }
+
+        return $user;
+    }
 }
