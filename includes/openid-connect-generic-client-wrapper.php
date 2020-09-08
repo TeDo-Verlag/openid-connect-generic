@@ -312,6 +312,31 @@ class OpenID_Connect_Generic_Client_Wrapper {
 		// get the decoded response from the authentication request result
 		$token_response = $client->get_token_response( $token_result );
 
+		$user = $this->validate( $token_response );
+
+		if ( is_wp_error( $user ) ) {
+			$this->error_redirect( $user );
+		}
+
+		// redirect back to the origin page if enabled
+		$redirect_url = isset( $_COOKIE[ $this->cookie_redirect_key ] ) ? esc_url_raw( $_COOKIE[ $this->cookie_redirect_key ] ) : false;
+
+		if( $this->settings->redirect_user_back && !empty( $redirect_url ) ) {
+			do_action( 'openid-connect-generic-redirect-user-back', $redirect_url, $user );
+			setcookie( $this->cookie_redirect_key, $redirect_url, 1, COOKIEPATH, COOKIE_DOMAIN, is_ssl() );
+			wp_redirect( $redirect_url );
+		}
+		// otherwise, go home!
+		else {
+			wp_redirect( home_url() );
+		}
+
+		exit;
+	}
+
+	public function validate($token_response) {
+		$client = $this->client;
+
 		// allow for other plugins to alter data before validation
 		$token_response = apply_filters( 'openid-connect-modify-token-response-before-validation', $token_response );
 
@@ -407,21 +432,8 @@ class OpenID_Connect_Generic_Client_Wrapper {
 		// log our success
 		$this->logger->log( "Successful login for: {$user->user_login} ({$user->ID})", 'login-success' );
 
-		// redirect back to the origin page if enabled
-		$redirect_url = isset( $_COOKIE[ $this->cookie_redirect_key ] ) ? esc_url_raw( $_COOKIE[ $this->cookie_redirect_key ] ) : false;
-
-		if( $this->settings->redirect_user_back && !empty( $redirect_url ) ) {
-			do_action( 'openid-connect-generic-redirect-user-back', $redirect_url, $user );
-			setcookie( $this->cookie_redirect_key, $redirect_url, 1, COOKIEPATH, COOKIE_DOMAIN, is_ssl() );
-			wp_redirect( $redirect_url );
-		}
-		// otherwise, go home!
-		else {
-			wp_redirect( home_url() );
-		}
-
-		exit;
-	}
+		return $user;
+    }
 
 	/**
 	 * Validate the potential WP_User
