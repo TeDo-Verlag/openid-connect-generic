@@ -455,6 +455,10 @@ class OpenID_Connect_Generic_Client_Wrapper {
 
 		$user = $this->validate( $token_response );
 
+		if ( is_wp_error( $user ) ) {
+			$this->error_redirect( $user );
+		}
+
 		// Default redirect to the homepage.
 		$redirect_url = home_url();
 		// Redirect user according to redirect set in state.
@@ -598,14 +602,14 @@ class OpenID_Connect_Generic_Client_Wrapper {
 		$token_response = apply_filters( 'openid-connect-modify-token-response-before-validation', $token_response );
 
 		if ( is_wp_error( $token_response ) ) {
-			$this->error_redirect( $token_response );
+			return $token_response;
 		}
 
 		// Ensure the that response contains required information.
 		$valid = $client->validate_token_response( $token_response );
 
 		if ( is_wp_error( $valid ) ) {
-			$this->error_redirect( $valid );
+			return $valid;
 		}
 
 		/**
@@ -619,14 +623,14 @@ class OpenID_Connect_Generic_Client_Wrapper {
 		$id_token_claim = apply_filters( 'openid-connect-modify-id-token-claim-before-validation', $id_token_claim );
 
 		if ( is_wp_error( $id_token_claim ) ) {
-			$this->error_redirect( $id_token_claim );
+			return $id_token_claim;
 		}
 
 		// Validate our id_token has required values.
 		$valid = $client->validate_id_token_claim( $id_token_claim );
 
 		if ( is_wp_error( $valid ) ) {
-			$this->error_redirect( $valid );
+			return $valid;
 		}
 
 		// If userinfo endpoint is set, exchange the token_response for a user_claim.
@@ -637,14 +641,14 @@ class OpenID_Connect_Generic_Client_Wrapper {
 		}
 
 		if ( is_wp_error( $user_claim ) ) {
-			$this->error_redirect( $user_claim );
+			return $user_claim;
 		}
 
 		// Validate our user_claim has required values.
 		$valid = $client->validate_user_claim( $user_claim, $id_token_claim );
 
 		if ( is_wp_error( $valid ) ) {
-			$this->error_redirect( $valid );
+			return $valid;
 		}
 
 		/**
@@ -659,7 +663,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 			if ( $this->settings->create_if_does_not_exist ) {
 				$user = $this->create_new_user( $subject_identity, $user_claim );
 				if ( is_wp_error( $user ) ) {
-					$this->error_redirect( $user );
+					return $user;
 				}
 			} else {
 				$this->error_redirect( new WP_Error( 'identity-not-map-existing-user', __( 'User identity is not linked to an existing WordPress user.', 'daggerhart-openid-connect-generic' ), $user_claim ) );
@@ -673,7 +677,7 @@ class OpenID_Connect_Generic_Client_Wrapper {
 		$valid = $this->validate_user( $user );
 
 		if ( is_wp_error( $valid ) ) {
-			$this->error_redirect( $valid );
+			return $valid;
 		}
 
 		// Login the found / created user.
@@ -1030,6 +1034,22 @@ class OpenID_Connect_Generic_Client_Wrapper {
 					$this->logger->log( "User authenticated by openid server: {$user->user_login}", 'success' );
 				}
 			}
+		}
+
+		return $user;
+	}
+
+	function validate_exchange_token($exchangeToken) {
+		add_filter('openid-connect-generic-alter-request', function ($request) {
+			$request['body']['scope'] = $this->settings->scope;
+
+			return $request;
+		});
+
+		$user = $this->validate($exchangeToken);
+
+		if ( is_wp_error($user) ) {
+			wp_logout();
 		}
 
 		return $user;
