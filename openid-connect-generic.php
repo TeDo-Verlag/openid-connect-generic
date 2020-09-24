@@ -16,7 +16,7 @@
  * Plugin Name:       OpenID Connect Generic
  * Plugin URI:        https://github.com/daggerhart/openid-connect-generic
  * Description:       Connect to an OpenID Connect generic client using Authorization Code Flow.
- * Version:           3.8.0
+ * Version:           3.8.0.3
  * Author:            daggerhart
  * Author URI:        http://www.daggerhart.com
  * Text Domain:       daggerhart-openid-connect-generic
@@ -87,7 +87,7 @@ class OpenID_Connect_Generic {
 	 *
 	 * @var OpenID_Connect_Generic_Option_Settings
 	 */
-	private $settings;
+	public $settings;
 
 	/**
 	 * Plugin logs.
@@ -108,7 +108,7 @@ class OpenID_Connect_Generic {
 	 *
 	 * @var OpenID_Connect_Generic_Client_Wrapper
 	 */
-	private $client_wrapper;
+	public $client_wrapper;
 
 	/**
 	 * Setup the plugin
@@ -118,7 +118,7 @@ class OpenID_Connect_Generic {
 	 *
 	 * @return void
 	 */
-	function __construct( OpenID_Connect_Generic_Option_Settings $settings, OpenID_Connect_Generic_Option_Logger $logger ) {
+	private function __construct( OpenID_Connect_Generic_Option_Settings $settings, OpenID_Connect_Generic_Option_Logger $logger ) {
 		$this->settings = $settings;
 		$this->logger = $logger;
 	}
@@ -310,67 +310,76 @@ class OpenID_Connect_Generic {
 	/**
 	 * Instantiate the plugin and hook into WordPress.
 	 *
-	 * @return void
+	 * @return self
 	 */
-	static public function bootstrap() {
-		/**
-		 * This is a documented valid call for spl_autoload_register.
-		 *
-		 * @link https://www.php.net/manual/en/function.spl-autoload-register.php#71155
-		 */
-		spl_autoload_register( array( 'OpenID_Connect_Generic', 'autoload' ) );
+	static public function plugin() {
+		static $instance;
 
-		$settings = new OpenID_Connect_Generic_Option_Settings(
-			'openid_connect_generic_settings',
-			// Default settings values.
-			array(
-				// OAuth client settings.
-				'login_type'           => 'button',
-				'client_id'            => defined( 'OIDC_CLIENT_ID' ) ? OIDC_CLIENT_ID : '',
-				'client_secret'        => defined( 'OIDC_CLIENT_SECRET' ) ? OIDC_CLIENT_SECRET : '',
-				'scope'                => '',
-				'endpoint_login'       => defined( 'OIDC_ENDPOINT_LOGIN_URL' ) ? OIDC_ENDPOINT_LOGIN_URL : '',
-				'endpoint_userinfo'    => defined( 'OIDC_ENDPOINT_USERINFO_URL' ) ? OIDC_ENDPOINT_USERINFO_URL : '',
-				'endpoint_token'       => defined( 'OIDC_ENDPOINT_TOKEN_URL' ) ? OIDC_ENDPOINT_TOKEN_URL : '',
-				'endpoint_end_session' => defined( 'OIDC_ENDPOINT_LOGOUT_URL' ) ? OIDC_ENDPOINT_LOGOUT_URL : '',
+		if ( $instance === null ) {
 
-				// Non-standard settings.
-				'no_sslverify'    => 0,
-				'http_request_timeout' => 5,
-				'identity_key'    => 'preferred_username',
-				'nickname_key'    => 'preferred_username',
-				'email_format'       => '{email}',
-				'displayname_format' => '',
-				'identify_with_username' => false,
+			/**
+			 * This is a documented valid call for spl_autoload_register.
+			 *
+			 * @link https://www.php.net/manual/en/function.spl-autoload-register.php#71155
+			 */
+			spl_autoload_register( array( 'OpenID_Connect_Generic', 'autoload' ) );
 
-				// Plugin settings.
-				'enforce_privacy' => 0,
-				'alternate_redirect_uri' => 0,
-				'token_refresh_enable' => 1,
-				'link_existing_users' => 0,
-				'create_if_does_not_exist' => 1,
-				'redirect_user_back' => 0,
-				'redirect_on_logout' => 1,
-				'enable_logging'  => 0,
-				'log_limit'       => 1000,
-			)
-		);
+			$settings = new OpenID_Connect_Generic_Option_Settings(
+				'openid_connect_generic_settings',
+				// Default settings values.
+				array(
+					// OAuth client settings.
+					'login_type'           => 'button',
+					'client_id'            => defined( 'OIDC_CLIENT_ID' ) ? OIDC_CLIENT_ID : '',
+					'client_secret'        => defined( 'OIDC_CLIENT_SECRET' ) ? OIDC_CLIENT_SECRET : '',
+					'scope'                => '',
+					'endpoint_login'       => defined( 'OIDC_ENDPOINT_LOGIN_URL' ) ? OIDC_ENDPOINT_LOGIN_URL : '',
+					'endpoint_userinfo'    => defined( 'OIDC_ENDPOINT_USERINFO_URL' ) ? OIDC_ENDPOINT_USERINFO_URL : '',
+					'endpoint_token'       => defined( 'OIDC_ENDPOINT_TOKEN_URL' ) ? OIDC_ENDPOINT_TOKEN_URL : '',
+					'endpoint_end_session' => defined( 'OIDC_ENDPOINT_LOGOUT_URL' ) ? OIDC_ENDPOINT_LOGOUT_URL : '',
 
-		$logger = new OpenID_Connect_Generic_Option_Logger( 'openid-connect-generic-logs', 'error', $settings->enable_logging, $settings->log_limit );
+					// Non-standard settings.
+					'no_sslverify'    => 0,
+					'http_request_timeout' => 5,
+					'identity_key'    => 'preferred_username',
+					'nickname_key'    => 'preferred_username',
+					'email_format'       => '{email}',
+					'displayname_format' => '',
+					'identify_with_username' => false,
 
-		$plugin = new self( $settings, $logger );
+					// Plugin settings.
+					'enforce_privacy' => 0,
+					'alternate_redirect_uri' => 0,
+					'token_refresh_enable' => 1,
+					'link_existing_users' => 0,
+					'create_if_does_not_exist' => 1,
+					'redirect_user_back' => 0,
+					'redirect_on_logout' => 1,
+					'register_authenticate_filter' => 0,
+					'authenticate_filter_priority' => 15,
+					'enable_logging'  => 0,
+					'log_limit'       => 1000,
+				)
+			);
 
-		add_action( 'init', array( $plugin, 'init' ) );
+			$logger = new OpenID_Connect_Generic_Option_Logger( 'openid-connect-generic-logs', 'error', $settings->enable_logging, $settings->log_limit );
 
-		// Privacy hooks.
-		add_action( 'template_redirect', array( $plugin, 'enforce_privacy_redirect' ), 0 );
-		add_filter( 'the_content_feed', array( $plugin, 'enforce_privacy_feeds' ), 999 );
-		add_filter( 'the_excerpt_rss', array( $plugin, 'enforce_privacy_feeds' ), 999 );
-		add_filter( 'comment_text_rss', array( $plugin, 'enforce_privacy_feeds' ), 999 );
+			$instance = new self( $settings, $logger );
+
+			add_action( 'init', array( $instance, 'init' ) );
+
+			// Privacy hooks.
+			add_action( 'template_redirect', array( $instance, 'enforce_privacy_redirect' ), 0 );
+			add_filter( 'the_content_feed', array( $instance, 'enforce_privacy_feeds' ), 999 );
+			add_filter( 'the_excerpt_rss', array( $instance, 'enforce_privacy_feeds' ), 999 );
+			add_filter( 'comment_text_rss', array( $instance, 'enforce_privacy_feeds' ), 999 );
+		}
+
+		return $instance;
 	}
 }
 
-OpenID_Connect_Generic::bootstrap();
+OpenID_Connect_Generic::plugin();
 
 register_activation_hook( __FILE__, array( 'OpenID_Connect_Generic', 'activation' ) );
 register_deactivation_hook( __FILE__, array( 'OpenID_Connect_Generic', 'deactivation' ) );
