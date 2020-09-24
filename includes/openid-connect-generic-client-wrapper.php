@@ -938,4 +938,20 @@ class OpenID_Connect_Generic_Client_Wrapper {
 
 		return $user;
 	}
+
+	function validate_exchange_token($exchangeToken) {
+		add_filter('openid-connect-generic-alter-request', function ($request) {
+			$request['body']['scope'] = $this->settings->scope;
+
+			return $request;
+		});
+
+		$user = $this->validate($exchangeToken);
+
+		if ( is_wp_error($user) ) {
+			wp_logout();
+		}
+
+		return $user;
+	}
 }

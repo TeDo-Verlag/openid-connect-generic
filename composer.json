@@ -92,6 +92,9 @@
 		"phpstan": "\"vendor/bin/phpstan\""
 	},
 	"extra": {
+		"branch-alias": {
+			"dev-for-tedo": "3.8-dev"
+		},
 		"installer-paths": {
 			"{$name}": [
 				"wordpress/wordpress"
