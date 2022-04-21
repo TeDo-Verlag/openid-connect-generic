@@ -1,5 +1,5 @@
 {
-	"name": "daggerhart/openid-connect-generic",
+	"name": "tedo/openid-connect-generic",
 	"type": "wordpress-plugin",
 	"license": "GPL-2.0-only",
 	"description": "OpenID Connect generic WordPress plugin.",
@@ -96,6 +96,9 @@
 		"analyze": "@phpstan analyze"
 	},
 	"extra": {
+        "branch-alias": {
+            "dev-for-tedo": "3.9-dev"
+        },
 		"wordpress-install-dir": "wordpress",
 		"phpcodesniffer-search-depth": 5
 	}

@@ -515,3 +515,24 @@ msgstr ""
 #. Author URI of the plugin/theme
 msgid "http://www.daggerhart.com"
 msgstr ""
+
+#: includes/openid-connect-generic-settings-page.php:308
+msgid "Register Authenticate Filter"
+msgstr ""
+
+#: includes/openid-connect-generic-settings-page.php:309
+msgid ""
+"Enable login by entering username and password on wordpress site without "
+"forwarding end user to Identity provider server. The grant_type "
+"\"password\" must be allowed on server."
+msgstr ""
+
+#: includes/openid-connect-generic-settings-page.php:314
+msgid "Authenticate Filter Priority"
+msgstr ""
+
+#: includes/openid-connect-generic-settings-page.php:315
+msgid ""
+"Previous options must be checked. The default wordpress authenticate filter "
+"has priority 20. The default value here is 15."
+msgstr ""
